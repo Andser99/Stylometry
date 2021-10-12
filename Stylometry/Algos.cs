@@ -10,27 +10,66 @@ namespace Stylometry
     class Algos
     {
         static EnglishRuleBasedTokenizer tokenizer = new EnglishRuleBasedTokenizer(false);
+        /// <summary>
+        /// <para>1 = Hunspell</para>
+        /// <para>Hunspell cannot parse emojis correctly and will throw <see cref="AccessViolationException"/>(s)</para>
+        /// <para>2 = Symspell</para>
+        /// </summary>
+        public static int SpellerId = 1;
 
-        public static List<(List<(string Original, string Wrong)> WrongWords, ExtendedArticleEntry Entry)> GetErrors(List<ExtendedArticleEntry> articleEntries)
+        /// <summary>
+        /// Returns a <see cref="List{T}"/> containing a (WrongWords, Entry) pair with a 
+        /// List of mispelled word pairs (Original, Fixed) for each <see cref="ExtendedArticleEntry"/>
+        /// </summary>
+        /// <param name="articleEntries"></param>
+        /// <returns></returns>
+        public static List<(List<(string Original, string Fixed)> WrongWords, ExtendedArticleEntry Entry)> GetErrors(List<ExtendedArticleEntry> articleEntries)
         {
             List<(List<(string, string)>, ExtendedArticleEntry)> errorList = new List<(List<(string, string)>, ExtendedArticleEntry)>(articleEntries.Count);
             foreach (var x in articleEntries)
             {
-                var errorPairsList = new List<(string Original, string Wrong)>();
+                Console.WriteLine($"GetErrors {articleEntries.IndexOf(x)}/{articleEntries.Count}");
+                var errorPairsList = new List<(string Original, string Fixed)>();
                 var errorEntry = (errorPairsList, x);
                 var tokens = tokenizer.Tokenize(x.Text);
+                x.TokenCount = tokens.Length;
                 foreach (var token in tokens)
                 {
                     // Ignores spell checking on most function words and non-word tokens
                     if (token.Length < 3) continue;
                     x.WordCount++;
-                    if (!Spellcheck.hunspell.Spell(token))
+                    if (SpellerId == 0)
                     {
-                        var suggestions = Spellcheck.hunspell.Suggest(token);
-                        var spellChecked = suggestions.FirstOrDefault();
-                        if (spellChecked != token)
+                        if (!Spellcheck.hunspell.Spell(token))
                         {
-                            errorPairsList.Add((token, spellChecked));
+                            var suggestions = Spellcheck.hunspell.Suggest(token);
+
+                            var spellChecked = suggestions.FirstOrDefault();
+                            if (spellChecked != token)
+                            {
+                                errorPairsList.Add((token, spellChecked));
+                            }
+                        }
+                    }
+                    else if (SpellerId == 1)
+                    {
+                        var suggestions = Spellcheck.symspell.Lookup(token, SymSpell.Verbosity.Closest, 3);
+                        if (suggestions.Count == 0) suggestions = Spellcheck.symspell.LookupCompound(token);
+                        if (suggestions[0].term != token)
+                        {
+                            suggestions = Spellcheck.symspell.LookupCompound(token);
+                            bool isOk = false;
+                            //Check for compound word formats separated with a hyphen or written together
+                            //These should be treated as correct, but a feature can be extracted
+                            if (suggestions[0].term.Replace(" ", "-") == token
+                                || suggestions[0].term.Replace(" ", "") == token)
+                            {
+                                isOk = true;
+                            }
+                            if (!isOk)
+                            {
+                                errorPairsList.Add((token, suggestions[0].term));
+                            }
                         }
                     }
                 }

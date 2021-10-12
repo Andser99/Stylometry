@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -7,11 +7,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="aspell" Version="0.60.6.1" />
     <PackageReference Include="CsvHelper" Version="27.1.1" />
     <PackageReference Include="Hunspell.Native" Version="1.2.5359.26130" />
     <PackageReference Include="NHunspell" Version="1.2.5554.16953" />
+    <PackageReference Include="NPlot" Version="0.9.10" />
     <PackageReference Include="OpenNLP" Version="1.3.5" />
     <PackageReference Include="Stanford.NLP.CoreNLP" Version="4.2.0.1" />
+    <PackageReference Include="SymSpell" Version="6.7.1" />
   </ItemGroup>
 
 </Project>
