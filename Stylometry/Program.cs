@@ -22,15 +22,17 @@ namespace Stylometry
 
 
             //Seed 5, 5, 2 was first used
+            //Setting MOD to anything other than 1 will filter out a random number of articles to a size of 1/MOD * original size
             var SEED = 5;
-            var MOD = 1;
+            var MOD = 2;
             var COUNT = 4;
+            var rnd = new Random(SEED);
             //
             // Gets the 2 longest article from each author that has 2+ articles
             var authorsWithNArticles = new List<ExtendedArticleEntry>();
             foreach (var authorArticles in dataLoader.AuthorArticles)
             {
-                if (authorArticles.Value.Count > 1 && new Random(SEED).Next() % MOD == 0)
+                if (authorArticles.Value.Count > 1 && rnd.Next() % MOD == 0)
                 {
                     if (authorArticles.Value.Count == COUNT)
                     {
