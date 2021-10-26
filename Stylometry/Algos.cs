@@ -1,4 +1,5 @@
 ﻿using OpenNLP.Tools.Tokenize;
+using OpenNLP.Tools.PosTagger;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,6 +10,8 @@ namespace Stylometry
 {
     class Algos
     {
+        //const string POS_MODELPATH = @"C:\Users\Andrej\source\repos\Stylometry\Stylometry\Dictionary\EnglishPOS.nbin";
+        //static EnglishMaximumEntropyPosTagger posTagger = new EnglishMaximumEntropyPosTagger(POS_MODELPATH);
         static EnglishRuleBasedTokenizer tokenizer = new EnglishRuleBasedTokenizer(false);
         /// <summary>
         /// <para>1 = Hunspell</para>
@@ -16,6 +19,20 @@ namespace Stylometry
         /// <para>2 = Symspell</para>
         /// </summary>
         public static int SpellerId = 1;
+
+        public static char[,] Keyboard = new char [3, 11] {
+            {'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '['},
+            {'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';', '\''},
+            {'z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '/', ' '}
+        };
+
+        public static Dictionary<char, (int X, int Y)> KeyboardCoords = new Dictionary<char, (int, int)>();
+
+        public static Dictionary<string, bool> IgnoredTokens = new Dictionary<string, bool> {
+            { "'ll", true },
+            { "'re", true },
+            { "'ve", true },
+        };
 
         /// <summary>
         /// Returns a <see cref="List{T}"/> containing a (WrongWords, Entry) pair with a 
@@ -45,7 +62,7 @@ namespace Stylometry
                             var suggestions = Spellcheck.hunspell.Suggest(token);
 
                             var spellChecked = suggestions.FirstOrDefault();
-                            if (spellChecked != token)
+                            if (spellChecked != token && spellChecked != token.ToLower())
                             {
                                 errorPairsList.Add((token, spellChecked));
                             }
@@ -53,16 +70,21 @@ namespace Stylometry
                     }
                     else if (SpellerId == 1)
                     {
+                        // Ignore All Caps words
+                        if (token.ToUpper() == token) continue;
+                        if (IgnoredTokens.ContainsKey(token)) continue;
                         var suggestions = Spellcheck.symspell.Lookup(token, SymSpell.Verbosity.Closest, 3);
                         if (suggestions.Count == 0) suggestions = Spellcheck.symspell.LookupCompound(token);
-                        if (suggestions[0].term != token)
+                        if (suggestions[0].term != token && suggestions[0].term != token.ToLower())
                         {
                             suggestions = Spellcheck.symspell.LookupCompound(token);
                             bool isOk = false;
                             //Check for compound word formats separated with a hyphen or written together
+                            //  and remove dots from end of words
                             //These should be treated as correct, but a feature can be extracted
                             if (suggestions[0].term.Replace(" ", "-") == token
-                                || suggestions[0].term.Replace(" ", "") == token)
+                                || suggestions[0].term.Replace(" ", "") == token
+                                || suggestions[0].term == token.Replace(".", "").ToLower())
                             {
                                 isOk = true;
                             }
@@ -74,10 +96,61 @@ namespace Stylometry
                     }
                 }
                 x.MisspellCount = errorPairsList.Count;
+                x.MisspelledWords = errorEntry.errorPairsList;
                 errorList.Add(errorEntry);
             }
             return errorList;
         }
+
+        static List<string> POSTag(ArticleEntry article)
+        {
+            throw new NotImplementedException();
+            //return posTagger.Tag(tokenizer.Tokenize(article.Text).Select(_ => Spellcheck.symspell.Lookup(_, SymSpell.Verbosity.Closest).FirstOrDefault);
+        }
+
+
+
+        public static List<(int Index, int Direction)> GetErrorDirection(string source, string target)
+        {
+            if (source.Length != target.Length) return null;
+            List<(int Index, int Direction)> errorList = new List<(int Index, int Direction)>();
+            for (int i = 0; i < source.Length; i++)
+            {
+                if (source[i] != target[i])
+                {
+                    var direction = GetDirection(source[i], target[i]);
+                    if (direction == -1) continue;
+                    errorList.Add((i, direction));
+                }
+            }
+            return errorList;
+        }
+
+        public static int GetDirection(char original, char error)
+        {
+            if (original == error) return -1;
+            if (!KeyboardCoords.ContainsKey(original) || !KeyboardCoords.ContainsKey(error)) return -1;
+            var dX = KeyboardCoords[original].X - KeyboardCoords[error].X;
+            var dY = KeyboardCoords[original].Y - KeyboardCoords[error].Y;
+            if (Math.Abs(dX) > Math.Abs(dY)) {
+                return dX > 0 ? 0 : 2;  // up : down
+            }
+            return dY > 0 ? 3 : 1; // left : right
+        }
+
+        public static void InitializeKeyboardCoords()
+        {
+            var width = Keyboard.GetLength(1);
+            var height = Keyboard.GetLength(0);
+            for (int i = 0; i < height; i++)
+            {
+                for (int j = 0; j < width; j++)
+                {
+                    KeyboardCoords.Add(Keyboard[i, j], (i, j));
+                }
+            }
+        }
+
         static void Swap<T>(ref T arg1, ref T arg2)
         {
             T temp = arg1;

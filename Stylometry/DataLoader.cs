@@ -20,10 +20,11 @@ namespace Stylometry
 
         public DataLoader()
         {
-            using var streamReader = new StreamReader(@"C:\Users\Andrej\source\repos\Stylometry\Stylometry\articles.csv");
+            //using var streamReader = new StreamReader(@"C:\Users\Andrej\source\repos\Stylometry\Stylometry\articles.csv");
+            using var streamReader = new StreamReader(@"S:\Datasets\blogtext.csv");
             using var csvReader = new CsvReader(streamReader, System.Globalization.CultureInfo.InvariantCulture);
             var extractedText = csvReader.GetRecords<ArticleEntry>().ToList();
-            foreach (var x in extractedText.Distinct())
+            foreach (var x in extractedText)
             {
                 ArticleEntries.Add(new ExtendedArticleEntry(x));
             }
@@ -45,9 +46,25 @@ namespace Stylometry
                 }
             }
 
+        }
 
-            //TrainingArticles.First().Text;
-
+        /// <summary>
+        /// Cuts ArticleEntries into a size 1/n while selecting random elements
+        /// </summary>
+        /// <param name="n"></param>
+        public static void ShortenAndSave(List<ArticleEntry> articles, int n, string path)
+        {
+            using var streamWriter = new StreamWriter(path);
+            using var csvWriter = new CsvWriter(streamWriter, System.Globalization.CultureInfo.InvariantCulture);
+            csvWriter.WriteHeader<ArticleEntry>();
+            var rnd = new Random();
+            foreach (var x in articles)
+            {
+                if (rnd.Next(n) == 0)
+                {
+                    csvWriter.WriteRecord(x);
+                }
+            }
         }
     }
 }

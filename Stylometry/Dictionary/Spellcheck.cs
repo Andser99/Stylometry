@@ -23,7 +23,7 @@ namespace Stylometry
 
             // Example from https://github.com/wolfgarbe/symspell
             int initialCapacity = 82765;
-            int maxEditDistanceDictionary = 3; // Precalc edit distance
+            int maxEditDistanceDictionary = 6; // Precalc edit distance
             symspell = new SymSpell(initialCapacity, maxEditDistanceDictionary);
 
             //load dictionary
