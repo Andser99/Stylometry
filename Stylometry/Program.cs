@@ -40,8 +40,8 @@ namespace Stylometry
             //Seed 5, 5, 2 was first used
             //Setting MOD to anything other than 1 will filter out a random number of articles to a size of 1/MOD * original size
             var SEED = 5;
-            var MOD = 4;
-            var COUNT = 6;
+            var MOD = 20;
+            var COUNT = 15;
             var rnd = new Random(SEED);
             //
             // Gets the 2 longest article from each author that has 2+ articles
@@ -89,7 +89,7 @@ namespace Stylometry
 
 
             //Save data
-            var filePath = @"C:\Users\Andrej\Desktop\Skola\IAU\2021-2022\cvicenia\tyzden-03\data\data.csv";
+            var filePath = @"C:\Users\Andrej\source\repos\Stylometry\Python\nove_data.csv";
             File.WriteAllText(filePath, $"Author,");
             foreach(var enumEntry in Enum.GetValues(typeof(UnicodeCategory)))
             {
