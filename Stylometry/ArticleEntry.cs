@@ -47,9 +47,13 @@ namespace Stylometry
         public int MisspellCount { get; set; } = 0;
         public string AuthorId { get; set; }
 
+        public double[] PosTagFrequency;
+
         public List<(string Original, string Fixed)> MisspelledWords = new List<(string Original, string Fixed)>();
 
         public List<(string Original, string Fixed, int Direction, int Index)> MisspelledDirections = new List<(string Original, string Fixed, int Direction, int Index)>();
+
+        public List<string> MisspellList = new List<string>();
 
         public ExtendedArticleEntry(string author, string text) : base(author, text)
         {
@@ -82,6 +86,12 @@ namespace Stylometry
                     foreach (var dir in errors)
                     {
                         MisspelledDirections.Add((mPair.Original, mPair.Fixed, dir.Direction, dir.Index));
+                        var swappedError = string.Concat(mPair.Original[dir.Index], mPair.Fixed[dir.Index]);
+                        if (!Algos.FoundDirectionErrors.Contains(swappedError))
+                        {
+                            Algos.FoundDirectionErrors.Add(swappedError);
+                        }
+                        MisspellList.Add(swappedError);
                     }
                 }
             }

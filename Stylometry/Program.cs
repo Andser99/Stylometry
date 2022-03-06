@@ -4,7 +4,6 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
-
 namespace Stylometry
 {
     class Program
@@ -15,6 +14,7 @@ namespace Stylometry
             CultureInfo customCulture = (CultureInfo)System.Threading.Thread.CurrentThread.CurrentCulture.Clone();
             customCulture.NumberFormat.NumberDecimalSeparator = ".";
             System.Threading.Thread.CurrentThread.CurrentCulture = customCulture;
+
 
             // Initialize Keyboard coord dictionary
             Algos.InitializeKeyboardCoords();
@@ -40,8 +40,8 @@ namespace Stylometry
             //Seed 5, 5, 2 was first used
             //Setting MOD to anything other than 1 will filter out a random number of articles to a size of 1/MOD * original size
             var SEED = 5;
-            var MOD = 20;
-            var COUNT = 15;
+            var MOD = 1;
+            var COUNT = 5;
             var rnd = new Random(SEED);
             //
             // Gets the 2 longest article from each author that has 2+ articles
@@ -73,6 +73,8 @@ namespace Stylometry
             {
                 err.Entry.PopulateRunes();
                 err.Entry.PopulateDirectionErrors();
+                err.Entry.PosTagFrequency = new double[Algos.TagDict.Count];
+                err.Entry.PosTagFrequency = Algos.POSTag(err.Entry);
             }
 
             // Write Pair info and UnicodeCategory stats
@@ -89,7 +91,7 @@ namespace Stylometry
 
 
             //Save data
-            var filePath = @"C:\Users\Andrej\source\repos\Stylometry\Python\nove_data.csv";
+            var filePath = @"C:\Users\Andrej\source\repos\Stylometry\Python\kratke_data.csv";
             File.WriteAllText(filePath, $"Author,");
             foreach(var enumEntry in Enum.GetValues(typeof(UnicodeCategory)))
             {
@@ -101,24 +103,57 @@ namespace Stylometry
             File.AppendAllText(filePath, $"Downerror,");
             File.AppendAllText(filePath, $"Lefterror,");
             File.AppendAllText(filePath, $"Misspellratio,");
+            for (int i = 0; i < Algos.TagDict.Count; i++)
+            {
+                File.AppendAllText(filePath, $"pos_{i}_{Algos.TagDict.FirstOrDefault(_ => _.Value == i).Key},");
+            }
             File.AppendAllText(filePath, $"Tokens{Environment.NewLine}");
 
+
+            int writingCounter = 0;
+            DateTime lastPrint = DateTime.Now;
+            Console.WriteLine($"Writing authors to file - {writingCounter}/{errorPairs.Count}");
             foreach (var err in errorPairs)
             {
-                File.AppendAllText(filePath, $"{err.Entry.AuthorId.ToInitials()}, ");
+                var line = new StringBuilder();
+                writingCounter++;
+                if (DateTime.Now - lastPrint > TimeSpan.FromMilliseconds(2000))
+                {
+                    lastPrint = DateTime.Now;
+                    Console.WriteLine($"Writing authors to file - {writingCounter}/{errorPairs.Count}");
+                }
+
+                line.Append($"{err.Entry.AuthorId.ToInitials()}, ");
+                //File.AppendAllText(filePath, $"{err.Entry.AuthorId.ToInitials()}, ");
                 //Alternative Author name instead of ID of the author
                 //File.AppendAllText(filePath, $"{err.Entry.Author.ToInitials()}, ");
                 foreach(var categoryKey in err.Entry.UnicodeCategoryCounts.Keys)
                 {
-                    File.AppendAllText(filePath, $"{err.Entry.UnicodeCategoryCounts[categoryKey]},");
-                    File.AppendAllText(filePath, $"{err.Entry.UnicodeCategoryCounts[categoryKey] / (double)err.Entry.TokenCount:0.###},");
+                    line.Append($"{err.Entry.UnicodeCategoryCounts[categoryKey]},");
+                    line.Append($"{err.Entry.UnicodeCategoryCounts[categoryKey] / (double)err.Entry.TokenCount:0.###},");
+                    //File.AppendAllText(filePath, $"{err.Entry.UnicodeCategoryCounts[categoryKey]},");
+                    //File.AppendAllText(filePath, $"{err.Entry.UnicodeCategoryCounts[categoryKey] / (double)err.Entry.TokenCount:0.###},");
                 }
-                File.AppendAllText(filePath, $"{err.Entry.MisspelledDirections.Count(_ => _.Direction == 0)},");
-                File.AppendAllText(filePath, $"{err.Entry.MisspelledDirections.Count(_ => _.Direction == 1)},");
-                File.AppendAllText(filePath, $"{err.Entry.MisspelledDirections.Count(_ => _.Direction == 2)},");
-                File.AppendAllText(filePath, $"{err.Entry.MisspelledDirections.Count(_ => _.Direction == 3)},");
-                File.AppendAllText(filePath, $"{err.Entry.MisspellRatio.ToString("0.###")},");
-                File.AppendAllText(filePath, $"{err.Entry.TokenCount.ToString("0.###")}{Environment.NewLine}");
+                line.Append($"{err.Entry.MisspelledDirections.Count(_ => _.Direction == 0)},");
+                line.Append($"{err.Entry.MisspelledDirections.Count(_ => _.Direction == 1)},");
+                line.Append($"{err.Entry.MisspelledDirections.Count(_ => _.Direction == 2)},");
+                line.Append($"{err.Entry.MisspelledDirections.Count(_ => _.Direction == 3)},");
+                //File.AppendAllText(filePath, $"{err.Entry.MisspelledDirections.Count(_ => _.Direction == 0)},");
+                //File.AppendAllText(filePath, $"{err.Entry.MisspelledDirections.Count(_ => _.Direction == 1)},");
+                //File.AppendAllText(filePath, $"{err.Entry.MisspelledDirections.Count(_ => _.Direction == 2)},");
+                //File.AppendAllText(filePath, $"{err.Entry.MisspelledDirections.Count(_ => _.Direction == 3)},");
+
+                line.Append($"{err.Entry.MisspellRatio.ToString("0.###")},");
+                //File.AppendAllText(filePath, $"{err.Entry.MisspellRatio.ToString("0.###")},");
+                for (int i = 0; i < Algos.TagDict.Count; i++)
+                {
+                    line.Append($"{err.Entry.PosTagFrequency[i]:0.0##},");
+                    //File.AppendAllText(filePath, $"{err.Entry.PosTagFrequency[i]:0.0##},");
+                }
+                line.Append($"{err.Entry.TokenCount.ToString("0.###")}{Environment.NewLine}");
+                //File.AppendAllText(filePath, $"{err.Entry.TokenCount.ToString("0.###")}{Environment.NewLine}");
+
+                File.AppendAllText(filePath, line.ToString());
             }
             //foreach (var err in x)
             //{

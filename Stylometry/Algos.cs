@@ -5,13 +5,17 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+//using edu.stanford.nlp.tagger.maxent;
 
 namespace Stylometry
 {
     class Algos
     {
-        //const string POS_MODELPATH = @"C:\Users\Andrej\source\repos\Stylometry\Stylometry\Dictionary\EnglishPOS.nbin";
-        //static EnglishMaximumEntropyPosTagger posTagger = new EnglishMaximumEntropyPosTagger(POS_MODELPATH);
+        //public const string POS_ST_PATH = @"C:\Users\Andrej\source\repos\Stylometry\Stylometry\Dictionary\english-caseless-left3words-distsim.tagger";
+        //static MaxentTagger maxentTagger = new MaxentTagger(POS_ST_PATH);
+
+        const string POS_MODELPATH = @"C:\Users\Andrej\source\repos\Stylometry\Stylometry\Dictionary\EnglishPOS.nbin";
+        static EnglishMaximumEntropyPosTagger posTagger = new EnglishMaximumEntropyPosTagger(POS_MODELPATH);
         static EnglishRuleBasedTokenizer tokenizer = new EnglishRuleBasedTokenizer(false);
         /// <summary>
         /// <para>1 = Hunspell</para>
@@ -20,7 +24,11 @@ namespace Stylometry
         /// </summary>
         public static int SpellerId = 1;
 
-        public static char[,] Keyboard = new char [3, 11] {
+        // Set containing all found swapped letters from the keyboard
+        public static HashSet<string> FoundDirectionErrors = new HashSet<string>();
+
+        public static char[,] Keyboard = new char [4, 11] {
+            {'1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-'},
             {'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '['},
             {'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';', '\''},
             {'z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '/', ' '}
@@ -42,10 +50,15 @@ namespace Stylometry
         /// <returns></returns>
         public static List<(List<(string Original, string Fixed)> WrongWords, ExtendedArticleEntry Entry)> GetErrors(List<ExtendedArticleEntry> articleEntries)
         {
+            DateTime lastPrint = DateTime.Now;
             List<(List<(string, string)>, ExtendedArticleEntry)> errorList = new List<(List<(string, string)>, ExtendedArticleEntry)>(articleEntries.Count);
             foreach (var x in articleEntries)
             {
-                Console.WriteLine($"GetErrors {articleEntries.IndexOf(x)}/{articleEntries.Count}");
+                if (DateTime.Now - lastPrint > TimeSpan.FromMilliseconds(2000))
+                {
+                    Console.WriteLine($"GetErrors {articleEntries.IndexOf(x) + 1}/{articleEntries.Count}");
+                    lastPrint = DateTime.Now;
+                }
                 var errorPairsList = new List<(string Original, string Fixed)>();
                 var errorEntry = (errorPairsList, x);
                 var tokens = tokenizer.Tokenize(x.Text);
@@ -102,9 +115,92 @@ namespace Stylometry
             return errorList;
         }
 
-        static List<string> POSTag(ArticleEntry article)
+        public static Dictionary<string, int> TagDict = new Dictionary<string, int>();
+
+        static string[] TagSentence(string sentence, int type = 0)
         {
-            throw new NotImplementedException();
+            if (type == 0)
+            {
+                return posTagger.TagSentence(sentence).Select(_ => _.Tag).ToArray();
+            }
+            else
+            {
+                var tokens = tokenizer.Tokenize(sentence);
+                string[] tags = new string[tokens.Length];
+                int index = 0;
+                foreach (var token in tokens)
+                {
+                    //var tag = maxentTagger.tagString(token);
+                    //tags[index] = tag;
+                    index++;
+                }
+                return tags;
+            }
+        }
+
+        /// <summary>
+        /// Returns a dictionary with the frequency of a specific tag pair
+        /// </summary>
+        /// <param name="article"></param>
+        /// <returns></returns>
+        public static double[] POSTag(ArticleEntry article)
+        {
+            if (TagDict.Count == 0)
+            {
+                int i = 0;
+                foreach (var x in posTagger.AllTags())
+                {
+                    if (x.Length < 2) continue;
+                    //TagDict.Add(x, i);
+                    //i++;
+                    foreach (var y in posTagger.AllTags())
+                    {
+                        // Check whether a pair isn't already in the dictionary
+                        if (y.Length < 2) continue;
+                        if (!TagDict.ContainsKey(string.Concat(x.Substring(0, 2), "_", y.Substring(0, 2))))
+                        {
+                            // add it and assign a unique ID to it
+                            TagDict.Add(string.Concat(x.Substring(0, 2), "_", y.Substring(0, 2)), i);
+                            i++;
+                        }
+                    }
+                }
+
+                Console.WriteLine($"Generated {TagDict.Count} POS combinations.");
+            }
+
+            double[] articleTags = new double[TagDict.Count];
+            Array.Clear(articleTags, 0, articleTags.Length);
+
+            // Tag the whole text as one sentence
+            var tags = TagSentence(article.Text, 1);
+
+
+
+            for (int i = 0; i < tags.Length - 1; i++)
+            {
+                if (tags[i].Length < 2 || tags[i+1].Length < 2) continue;
+                // create a tag bigram
+                var pair = string.Concat(tags[i].Substring(0, 2), "_", tags[i + 1].Substring(0, 2));
+                //var pair = tags[i].Tag;
+                if (TagDict.ContainsKey(pair))
+                {
+                    articleTags[TagDict[pair]]++;
+                }
+                else
+                {
+                    Console.WriteLine($"Tag pair <{pair}> wasn't generated, ignoring.");
+                }
+            }
+
+            // Get the tag frequency among all tags
+            for (int i = 0; i < articleTags.Length; i++)
+            {
+                articleTags[i] /= tags.Length;
+            }
+
+            return articleTags;
+
             //return posTagger.Tag(tokenizer.Tokenize(article.Text).Select(_ => Spellcheck.symspell.Lookup(_, SymSpell.Verbosity.Closest).FirstOrDefault);
         }
 

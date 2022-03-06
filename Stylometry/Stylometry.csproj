@@ -13,7 +13,10 @@
     <PackageReference Include="NHunspell" Version="1.2.5554.16953" />
     <PackageReference Include="NPlot" Version="0.9.10" />
     <PackageReference Include="OpenNLP" Version="1.3.5" />
+    <PackageReference Include="SimpleNetNlp" Version="3.8.0" />
+    <PackageReference Include="SimpleNetNlp.Models.PosTagger" Version="3.8.0" />
     <PackageReference Include="SymSpell" Version="6.7.1" />
+    <PackageReference Include="System.Runtime.Caching" Version="6.0.0" />
   </ItemGroup>
 
 </Project>
