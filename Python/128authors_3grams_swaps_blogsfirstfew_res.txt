@@ -1,0 +1,42 @@
+32 authors
+
+Decision tree
+	0.171875
+Logreg
+	0.046875
+Forest
+	0.140625
+
+Decision tree
+	0.175
+Logreg
+	0.025
+Forest
+	0.25
+
+Decision tree
+	0.171875
+Logreg
+	0.0625
+Forest
+	0.203125
+
+
+64 authors
+
+Decision tree
+	0.12698412698412698
+Logreg
+	0.047619047619047616
+Forest
+	0.16666666666666666
+
+
+128 authors
+
+Decision tree
+	0.10317460317460317
+Logreg
+	0.04365079365079365
+Forest
+	0.1349206349206349

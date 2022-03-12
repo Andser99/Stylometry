@@ -1,0 +1,17 @@
+32 authors
+DT 20.3125
+SVM 1.56, 0.0
+LogReg 1.56
+Forest 21.875
+
+64 authors
+DT 12
+SVM 2.4, 3.2
+LogReg 1.6
+Forest 18.4
+
+128 authors
+DT 5.53
+SVM 0.79, 0.39
+LogReg 1.58
+Forest 10.67

@@ -34,6 +34,16 @@ namespace Stylometry
             {'z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '/', ' '}
         };
 
+        public static char[] KeyboardChars = new char[44]
+        {
+            '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-',
+            'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '[',
+            'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';', '\'',
+            'z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '/', ' '
+        };
+
+        public static Dictionary<string, int> KeyboardDict = new Dictionary<string, int>();
+
         public static Dictionary<char, (int X, int Y)> KeyboardCoords = new Dictionary<char, (int, int)>();
 
         public static Dictionary<string, bool> IgnoredTokens = new Dictionary<string, bool> {
@@ -50,6 +60,19 @@ namespace Stylometry
         /// <returns></returns>
         public static List<(List<(string Original, string Fixed)> WrongWords, ExtendedArticleEntry Entry)> GetErrors(List<ExtendedArticleEntry> articleEntries)
         {
+            if (KeyboardDict.Count == 0) {
+                int index = 0;
+                foreach (var x in KeyboardChars)
+                {
+                    foreach (var y in KeyboardChars)
+                    {
+                        KeyboardDict.Add(string.Concat(x, "_", y), index);
+                        index++;
+                    }
+                }
+            }
+
+
             DateTime lastPrint = DateTime.Now;
             List<(List<(string, string)>, ExtendedArticleEntry)> errorList = new List<(List<(string, string)>, ExtendedArticleEntry)>(articleEntries.Count);
             foreach (var x in articleEntries)
@@ -112,6 +135,7 @@ namespace Stylometry
                 x.MisspelledWords = errorEntry.errorPairsList;
                 errorList.Add(errorEntry);
             }
+            Console.WriteLine($"GetErrors Done.");
             return errorList;
         }
 
@@ -138,6 +162,11 @@ namespace Stylometry
             }
         }
 
+
+        public static int firstZeroTag;
+        public static List<(int Index, double Count)> sortedTags;
+        public static double[] allTagsCount;
+        private static int ngrams = 3;
         /// <summary>
         /// Returns a dictionary with the frequency of a specific tag pair
         /// </summary>
@@ -150,22 +179,39 @@ namespace Stylometry
                 int i = 0;
                 foreach (var x in posTagger.AllTags())
                 {
-                    if (x.Length < 2) continue;
+                    //if (x.Length < 2) continue;
                     //TagDict.Add(x, i);
                     //i++;
                     foreach (var y in posTagger.AllTags())
                     {
                         // Check whether a pair isn't already in the dictionary
-                        if (y.Length < 2) continue;
-                        if (!TagDict.ContainsKey(string.Concat(x.Substring(0, 2), "_", y.Substring(0, 2))))
+                        //if (y.Length < 2) continue;
+                        if (ngrams == 2)
                         {
-                            // add it and assign a unique ID to it
-                            TagDict.Add(string.Concat(x.Substring(0, 2), "_", y.Substring(0, 2)), i);
-                            i++;
+                            if (!TagDict.ContainsKey(string.Concat(x.Shorten(2), "_", y.Shorten(2))))
+                            {
+                                // add it and assign a unique ID to it
+                                TagDict.Add(string.Concat(x.Shorten(2), "_", y.Shorten(2)), i);
+                                i++;
+                            }
+                        }
+                        else if (ngrams == 3)
+                        {
+                            foreach (var z in posTagger.AllTags())
+                            {
+                                //if (z.Length < 2) continue;
+
+                                if (!TagDict.ContainsKey(string.Concat(x.Shorten(2), "_", y.Shorten(2), "_", z.Shorten(2))))
+                                {
+                                    // add it and assign a unique ID to it
+                                    TagDict.Add(string.Concat(x.Shorten(2), "_", y.Shorten(2), "_", z.Shorten(2)), i);
+                                    i++;
+                                }
+                            }
                         }
                     }
                 }
-
+                allTagsCount = new double[TagDict.Count];
                 Console.WriteLine($"Generated {TagDict.Count} POS combinations.");
             }
 
@@ -173,23 +219,30 @@ namespace Stylometry
             Array.Clear(articleTags, 0, articleTags.Length);
 
             // Tag the whole text as one sentence
-            var tags = TagSentence(article.Text, 1);
+            var tags = TagSentence(article.Text, 0);
 
 
 
-            for (int i = 0; i < tags.Length - 1; i++)
+            for (int i = 0; i < tags.Length - (ngrams - 1); i++)
             {
-                if (tags[i].Length < 2 || tags[i+1].Length < 2) continue;
-                // create a tag bigram
-                var pair = string.Concat(tags[i].Substring(0, 2), "_", tags[i + 1].Substring(0, 2));
+                //bool skip = false;
+                //for (int j = 0; j < ngrams - 1; j++)
+                //{
+                //    if (tags[i + j].Length < 2) skip = true;
+                //}
+                //if (skip) continue;
+                //if (tags[i].Length < 2 || tags[i+1].Length < 2) continue;
+                // create a tag ngram
+                var ngram = string.Concat(tags[i].Shorten(2), "_", tags[i + 1].Shorten(2), (ngrams > 2 ? "_"+tags[i + 2].Shorten(2) : ""));
                 //var pair = tags[i].Tag;
-                if (TagDict.ContainsKey(pair))
+                if (TagDict.ContainsKey(ngram))
                 {
-                    articleTags[TagDict[pair]]++;
+                    allTagsCount[TagDict[ngram]]++;
+                    articleTags[TagDict[ngram]]++;
                 }
                 else
                 {
-                    Console.WriteLine($"Tag pair <{pair}> wasn't generated, ignoring.");
+                    Console.WriteLine($"Tag pair <{ngram}> wasn't generated, ignoring.");
                 }
             }
 
@@ -204,6 +257,25 @@ namespace Stylometry
             //return posTagger.Tag(tokenizer.Tokenize(article.Text).Select(_ => Spellcheck.symspell.Lookup(_, SymSpell.Verbosity.Closest).FirstOrDefault);
         }
 
+        /// <summary>
+        /// Sorts all ngram tags according to their frequency from most frequent to least frequent.
+        /// </summary>
+        public static void SortTags()
+        {
+            List<(int Index, double Count)> tags = new List<(int Index, double Count)>();
+            for (int i = 0; i < allTagsCount.Length; i++)
+            {
+                tags.Add((i, allTagsCount[i]));
+            }
+            sortedTags = tags.OrderByDescending(_ => _.Count).ToList();
+            firstZeroTag = sortedTags.FindIndex(_ => _.Count == 0);
+        }
+
+        public static bool ShouldAddTag(int index)
+        {
+            // tag is in the top 1%;
+            return sortedTags.FindIndex(_ => _.Index == index) < sortedTags.Count / 100;
+        }
 
 
         public static List<(int Index, int Direction)> GetErrorDirection(string source, string target)

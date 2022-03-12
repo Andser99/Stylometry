@@ -55,6 +55,11 @@ namespace Stylometry
 
         public List<string> MisspellList = new List<string>();
 
+        /// <summary>
+        /// Indexes are values from <see cref="Algos.KeyboardDict"/>
+        /// </summary>
+        public double[] SwappedKeysOccurence;
+
         public ExtendedArticleEntry(string author, string text) : base(author, text)
         {
             AuthorId = CheckAuthor(author);
@@ -78,6 +83,8 @@ namespace Stylometry
 
         public void PopulateDirectionErrors()
         {
+            SwappedKeysOccurence = new double[Algos.KeyboardDict.Count];
+
             foreach (var mPair in MisspelledWords)
             {
                 var errors = Algos.GetErrorDirection(mPair.Original, mPair.Fixed);
@@ -85,6 +92,12 @@ namespace Stylometry
                 {
                     foreach (var dir in errors)
                     {
+                        var swappedPair = mPair.Original.ToLower()[dir.Index] + "_" + mPair.Fixed.ToLower()[dir.Index];
+                        if (Algos.KeyboardDict.ContainsKey(swappedPair))
+                        {
+                            SwappedKeysOccurence[Algos.KeyboardDict[swappedPair]]++;
+                        }
+
                         MisspelledDirections.Add((mPair.Original, mPair.Fixed, dir.Direction, dir.Index));
                         var swappedError = string.Concat(mPair.Original[dir.Index], mPair.Fixed[dir.Index]);
                         if (!Algos.FoundDirectionErrors.Contains(swappedError))

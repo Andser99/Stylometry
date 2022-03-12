@@ -1,0 +1,28 @@
+137 authors
+Decision tree
+0.13273676360924683
+Logreg
+0.0447427293064877
+Forest
+0.23228933631618195
+
+1374 authors 807 features
+Decision tree
+0.6209917971662938
+Logreg
+0.03355704697986577
+Forest max_depth=50 n_estimators=100
+0.42449664429530204
+
+
+408 authors 2033 features
+Decision tree
+0.7091871691061975
+Forest n_estimators=200
+0.7279975085643102
+
+18 authors
+Decision tree
+0.37265917602996257
+Forest
+0.49063670411985016

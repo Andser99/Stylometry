@@ -38,6 +38,19 @@ namespace Stylometry
             }
             return result;
         }
+        /// <summary>
+        /// Shortens a string to a maximum length of <paramref name="length"/>,
+        /// returns the same value if it is a shorter, null or empty string unlike <seealso cref="string.Substring(int, int)"/>
+        /// </summary>
+        /// <param name="val"></param>
+        /// <param name="length"></param>
+        /// <returns></returns>
+        public static string Shorten(this string val, int length)
+        {
+            if (string.IsNullOrEmpty(val)) return val;
+            if (val.Length <= length) return val;
+            return val.Substring(0, length);
+        }
 
         /// <summary>
         /// Creates a shorthand form of string, removing any spaces and writing at most <paramref name="initialCount"/> characters

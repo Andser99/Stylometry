@@ -41,11 +41,12 @@ namespace Stylometry
             //Setting MOD to anything other than 1 will filter out a random number of articles to a size of 1/MOD * original size
             var SEED = 5;
             var MOD = 1;
-            var COUNT = 5;
+            var COUNT = 100;
             var rnd = new Random(SEED);
             //
-            // Gets the 2 longest article from each author that has 2+ articles
+            // Gets the <COUNT> longest article from each author that has <COUNT>+ articles
             var authorsWithNArticles = new List<ExtendedArticleEntry>();
+            Console.WriteLine($"Filtering authors MOD={MOD}, COUNT={COUNT}");
             foreach (var authorArticles in dataLoader.AuthorArticles)
             {
                 if (authorArticles.Value.Count > 1 && rnd.Next() % MOD == 0)
@@ -76,22 +77,17 @@ namespace Stylometry
                 err.Entry.PosTagFrequency = new double[Algos.TagDict.Count];
                 err.Entry.PosTagFrequency = Algos.POSTag(err.Entry);
             }
+            // Sort tags from most frequent to least frequent
+            Algos.SortTags();
 
-            // Write Pair info and UnicodeCategory stats
-            //foreach (var err in errorPairs)
-            //{
-            //    Console.WriteLine($"{err.Entry.Author.PadRight(18)} : {err.Entry.MisspellRatio.ToString("0.000")} = {err.Entry.MisspellCount}/{err.Entry.WordCount}, DIR {err.Entry.GetMostCommonDirection().Direction} ");
-            //    foreach(var key in err.Entry.UnicodeCategoryCounts.Keys)
-            //    {
-            //        Console.Write($"{key.ToString().ToInitials(),6} {err.Entry.UnicodeCategoryCounts[key],5}, ");
-            //    }
-            //    Console.WriteLine();
-            //}
-
-
+            //int startIndex = 0;
+            //int endIndex = Algos.sortedTags.Count / 100;
+            int startIndex = Algos.firstZeroTag - (Algos.sortedTags.Count / 100) >= 0 ? Algos.firstZeroTag - (Algos.sortedTags.Count / 100) : 0;
+            int endIndex = Algos.firstZeroTag;
 
             //Save data
             var filePath = @"C:\Users\Andrej\source\repos\Stylometry\Python\kratke_data.csv";
+            //Header
             File.WriteAllText(filePath, $"Author,");
             foreach(var enumEntry in Enum.GetValues(typeof(UnicodeCategory)))
             {
@@ -103,13 +99,17 @@ namespace Stylometry
             File.AppendAllText(filePath, $"Downerror,");
             File.AppendAllText(filePath, $"Lefterror,");
             File.AppendAllText(filePath, $"Misspellratio,");
-            for (int i = 0; i < Algos.TagDict.Count; i++)
+            for (int i = startIndex; i < endIndex; i++)
             {
-                File.AppendAllText(filePath, $"pos_{i}_{Algos.TagDict.FirstOrDefault(_ => _.Value == i).Key},");
+                File.AppendAllText(filePath, $"pos_{i}_{Algos.TagDict.FirstOrDefault(_ => _.Value == Algos.sortedTags[i].Index).Key.Replace(",", "CO")},");
+            }
+            for (int i = 0; i < Algos.KeyboardDict.Count; i++)
+            {
+                File.AppendAllText(filePath, $"swap_{Algos.KeyboardDict.FirstOrDefault(_ => _.Value == i).Key.Replace(",", "CO")},");
             }
             File.AppendAllText(filePath, $"Tokens{Environment.NewLine}");
 
-
+            // Data
             int writingCounter = 0;
             DateTime lastPrint = DateTime.Now;
             Console.WriteLine($"Writing authors to file - {writingCounter}/{errorPairs.Count}");
@@ -123,7 +123,7 @@ namespace Stylometry
                     Console.WriteLine($"Writing authors to file - {writingCounter}/{errorPairs.Count}");
                 }
 
-                line.Append($"{err.Entry.AuthorId.ToInitials()}, ");
+                line.Append($"{err.Entry.AuthorId}, ");
                 //File.AppendAllText(filePath, $"{err.Entry.AuthorId.ToInitials()}, ");
                 //Alternative Author name instead of ID of the author
                 //File.AppendAllText(filePath, $"{err.Entry.Author.ToInitials()}, ");
@@ -143,18 +143,24 @@ namespace Stylometry
                 //File.AppendAllText(filePath, $"{err.Entry.MisspelledDirections.Count(_ => _.Direction == 2)},");
                 //File.AppendAllText(filePath, $"{err.Entry.MisspelledDirections.Count(_ => _.Direction == 3)},");
 
-                line.Append($"{err.Entry.MisspellRatio.ToString("0.###")},");
+                line.Append($"{err.Entry.MisspellRatio:0.###},");
                 //File.AppendAllText(filePath, $"{err.Entry.MisspellRatio.ToString("0.###")},");
-                for (int i = 0; i < Algos.TagDict.Count; i++)
+                for (int i = startIndex; i < endIndex; i++)
                 {
-                    line.Append($"{err.Entry.PosTagFrequency[i]:0.0##},");
+                    line.Append($"{err.Entry.PosTagFrequency[Algos.sortedTags[i].Index]:0.0##},");
                     //File.AppendAllText(filePath, $"{err.Entry.PosTagFrequency[i]:0.0##},");
                 }
-                line.Append($"{err.Entry.TokenCount.ToString("0.###")}{Environment.NewLine}");
+                for (int i = 0; i < Algos.KeyboardDict.Count; i++)
+                {
+                    line.Append($"{err.Entry.SwappedKeysOccurence[i] / err.Entry.TokenCount:0.###},");
+                }
+                line.Append($"{err.Entry.TokenCount:0.###}{Environment.NewLine}");
                 //File.AppendAllText(filePath, $"{err.Entry.TokenCount.ToString("0.###")}{Environment.NewLine}");
 
                 File.AppendAllText(filePath, line.ToString());
             }
+
+            Console.WriteLine($"Writing authors to file Done.");
             //foreach (var err in x)
             //{
             //    Console.WriteLine("---BEGIN AUTHOR---");
