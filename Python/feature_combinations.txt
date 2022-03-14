@@ -1,0 +1,46 @@
+19authors_3grams_swaps_blogsfirstfew_50articles
+top 1% PoS 				+ misspellratio
+Decision tree
+0.22614840989399293
+Forest
+0.38515901060070673
+
+
+top 1% PoS + 	few runes + directions 	+ misspellratio
+
+Decision tree
+0.3263157894736842
+Forest
+0.5017543859649123
+
+
+top 1% PoS + 	few runes + directions 	+ misspellratio + swaps
+
+Decision tree
+0.31095406360424027
+Forest
+0.5017667844522968
+
+
+		few runes + directions 	+ misspellratio + swaps
+
+Decision tree
+0.32280701754385965
+Forest
+0.47017543859649125
+
+
+top 1% PoS +			    directions 	+ misspellratio
+
+Decision tree
+0.26595744680851063
+Forest
+0.43617021276595747
+
+
+			    directions 	+ misspellratio
+
+Decision tree
+0.1934156378600823
+Forest
+0.19753086419753085

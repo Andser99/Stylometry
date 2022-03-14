@@ -41,7 +41,7 @@ namespace Stylometry
             //Setting MOD to anything other than 1 will filter out a random number of articles to a size of 1/MOD * original size
             var SEED = 5;
             var MOD = 1;
-            var COUNT = 100;
+            var COUNT = 50;
             var rnd = new Random(SEED);
             //
             // Gets the <COUNT> longest article from each author that has <COUNT>+ articles

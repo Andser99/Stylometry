@@ -163,6 +163,7 @@ namespace Stylometry
         }
 
 
+        // The index of the first tag that had zero occurences
         public static int firstZeroTag;
         public static List<(int Index, double Count)> sortedTags;
         public static double[] allTagsCount;
