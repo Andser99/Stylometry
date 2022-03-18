@@ -39,7 +39,7 @@ namespace Stylometry
 
             //Seed 5, 5, 2 was first used
             //Setting MOD to anything other than 1 will filter out a random number of articles to a size of 1/MOD * original size
-            var SEED = 5;
+            var SEED = 2;
             var MOD = 1;
             var COUNT = 50;
             var rnd = new Random(SEED);

@@ -21,7 +21,7 @@ namespace Stylometry
         public DataLoader()
         {
             //using var streamReader = new StreamReader(@"C:\Users\Andrej\source\repos\Stylometry\Stylometry\articles.csv");
-            using var streamReader = new StreamReader(@"S:\Datasets\blogsfirstfew.csv");
+            using var streamReader = new StreamReader(@"S:\Datasets\blogtext.csv");
             using var csvReader = new CsvReader(streamReader, System.Globalization.CultureInfo.InvariantCulture);
             var extractedText = csvReader.GetRecords<ArticleEntry>().ToList();
             foreach (var x in extractedText)
